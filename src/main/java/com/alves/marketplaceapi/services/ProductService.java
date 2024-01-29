@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 public class ProductService {
 
   private final ProductRepository productRepository;
+  private final CategoryService categoryService;
 
   private Product convert(ProductRequest productData) {
     var product = new Product();
@@ -32,13 +33,16 @@ public class ProductService {
 
   public Product createProduct(ProductRequest productData) {
     var product = convert(productData);
+    categoryService.getCategory(product.getCategoryId());
     return productRepository.save(product);
   }
 
   public Product updateProduct(Long id, ProductRequest productData) {
     var product = getProduct(id);
-    if(productData.categoryId() != null)
+    if(productData.categoryId() != null) {
+      categoryService.getCategory(product.getCategoryId());
       product.setCategoryId(productData.categoryId());
+    }
     if(productData.name() != null)
       product.setName(productData.name());
     if(productData.description() != null)
