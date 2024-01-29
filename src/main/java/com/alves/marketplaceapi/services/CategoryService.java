@@ -24,10 +24,6 @@ public class CategoryService {
     return category;
   }
 
-  public List<Category> getAllCategories() {
-    return categoryRepository.findAll();
-  }
-
   public Category getCategory(Long id) {
     var category = categoryRepository.findById(id)
       .orElseThrow(() -> new CategoryNotFoundException("ID", id));
