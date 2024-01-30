@@ -1,7 +1,10 @@
 package com.alves.marketplaceapi.services;
 
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import com.alves.marketplaceapi.domain.product.Product;
@@ -12,6 +15,7 @@ import com.alves.marketplaceapi.repositories.ProductRepository;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
+@CacheConfig(cacheNames="products")
 @Service
 public class ProductService {
 
@@ -27,21 +31,33 @@ public class ProductService {
     return product;
   }
 
-  @Cacheable("products")
+  @Cacheable
   public Product getProduct(Long id) {
     var product = productRepository.findById(id)
       .orElseThrow(() -> new ProductNotFoundException("ID", id));
     return product;
   }
 
-  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
+  @Caching(
+    put=@CachePut(key="#result.id"),
+    evict={
+      @CacheEvict(value="categories", key="#result.categoryId"),
+      @CacheEvict(value="catalogs", allEntries=true)
+    }
+  )
   public Product createProduct(ProductRequest productData) {
     var product = convert(productData);
     categoryService.getCategory(product.getCategoryId());
     return productRepository.save(product);
   }
 
-  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
+  @Caching(
+    put=@CachePut(key="#id"),
+    evict={
+      @CacheEvict(value="categories", key="#result.categoryId"),
+      @CacheEvict(value="catalogs", allEntries=true)
+    }
+  )
   public Product updateProduct(Long id, ProductRequest productData) {
     var product = getProduct(id);
     if(productData.categoryId() != null) {
@@ -57,10 +73,16 @@ public class ProductService {
     return productRepository.save(product);
   }
 
-  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
-  public void deleteProduct(Long id) {
+  @Caching(evict={
+    @CacheEvict,
+    @CacheEvict(value="categories", key="#result"),
+    @CacheEvict(value="catalogs", allEntries=true)
+  })
+  public Long deleteProduct(Long id) {
     var product = getProduct(id);
+    var categoryId = product.getCategoryId();
     productRepository.delete(product);
+    return categoryId;
   }
   
 }
