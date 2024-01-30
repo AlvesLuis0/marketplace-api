@@ -1,5 +1,6 @@
 package com.alves.marketplaceapi.domain.product;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 import jakarta.persistence.Entity;
@@ -12,10 +13,10 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-public class Product {
+public class Product implements Serializable {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Long id;
   private Long categoryId;
   private String name;

@@ -2,6 +2,8 @@ package com.alves.marketplaceapi.services;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.alves.marketplaceapi.domain.category.Category;
@@ -28,18 +30,21 @@ public class CategoryService {
     return categoryRepository.findAll();
   }
 
+  @Cacheable("categories")
   public Category getCategory(Long id) {
     var category = categoryRepository.findById(id)
       .orElseThrow(() -> new CategoryNotFoundException("ID", id));
     return category;
   }
 
+  @CacheEvict(value={"catalogs", "categories"}, allEntries=true)
   public Category createCategory(CategoryRequest categoryData) {
     var category = convert(categoryData);
     category.setProducts(List.of());
     return categoryRepository.save(category);
   }
 
+  @CacheEvict(value={"catalogs", "categories"}, allEntries=true)
   public Category updateCategory(Long id, CategoryRequest categoryData) {
     var category = getCategory(id);
     if(categoryData.name() != null)
@@ -49,6 +54,7 @@ public class CategoryService {
     return categoryRepository.save(category);
   }
 
+  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
   public void deleteCategory(Long id) {
     var category = getCategory(id);
     categoryRepository.delete(category);

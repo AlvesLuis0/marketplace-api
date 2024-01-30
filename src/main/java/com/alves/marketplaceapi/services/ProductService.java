@@ -1,5 +1,7 @@
 package com.alves.marketplaceapi.services;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.alves.marketplaceapi.domain.product.Product;
@@ -25,18 +27,21 @@ public class ProductService {
     return product;
   }
 
+  @Cacheable("products")
   public Product getProduct(Long id) {
     var product = productRepository.findById(id)
       .orElseThrow(() -> new ProductNotFoundException("ID", id));
     return product;
   }
 
+  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
   public Product createProduct(ProductRequest productData) {
     var product = convert(productData);
     categoryService.getCategory(product.getCategoryId());
     return productRepository.save(product);
   }
 
+  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
   public Product updateProduct(Long id, ProductRequest productData) {
     var product = getProduct(id);
     if(productData.categoryId() != null) {
@@ -52,6 +57,7 @@ public class ProductService {
     return productRepository.save(product);
   }
 
+  @CacheEvict(value={"catalogs", "categories", "products"}, allEntries=true)
   public void deleteProduct(Long id) {
     var product = getProduct(id);
     productRepository.delete(product);
