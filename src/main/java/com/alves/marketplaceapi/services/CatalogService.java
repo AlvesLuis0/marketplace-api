@@ -2,7 +2,6 @@ package com.alves.marketplaceapi.services;
 
 import java.util.List;
 
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -23,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class CatalogService {
 
   private final CatalogRepository catalogRepository;
-  private final CacheManager cacheManager;
+  private final CacheService cacheService;
 
   private Catalog convert(CatalogRequest catalogData) {
     var catalog = new Catalog();
@@ -50,15 +49,7 @@ public class CatalogService {
   @CacheEvict
   public void deleteCatalog(String owner) {
     var catalog = getCatalog(owner);
-    // removing categories and products in the cache
-    var categoriesCache = cacheManager.getCache("categories");
-    var productCache = cacheManager.getCache("products");
-    catalog.getCategories().stream()
-      .forEach(category -> {
-        category.getProducts().stream()
-          .forEach(product -> productCache.evict(product.getId()));
-        categoriesCache.evict(category.getId());
-      });
+    cacheService.deleteAllCategoriesByCatalog(catalog);
     catalogRepository.delete(catalog);
   }
   

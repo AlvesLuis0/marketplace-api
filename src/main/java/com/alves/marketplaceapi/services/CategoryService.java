@@ -2,12 +2,10 @@ package com.alves.marketplaceapi.services;
 
 import java.util.List;
 
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import com.alves.marketplaceapi.domain.category.Category;
@@ -24,7 +22,7 @@ public class CategoryService {
 
   private final CategoryRepository categoryRepository;
   private final CatalogService catalogService;
-  private final CacheManager cacheManager;
+  private final CacheService cacheService;
 
   private Category convert(CategoryRequest categoryData) {
     var category = new Category();
@@ -45,41 +43,31 @@ public class CategoryService {
     return category;
   }
 
-  @Caching(
-    put=@CachePut(key="#result.id"),
-    evict=@CacheEvict(value="catalogs", allEntries=true)
-  )
+  @CachePut(key="#result.id")
   public Category createCategory(CategoryRequest categoryData) {
     var category = convert(categoryData);
-    catalogService.getCatalog(category.getOwner());
     category.setProducts(List.of());
+    cacheService.deleteCatalogByOwner(category.getOwner());
     return categoryRepository.save(category);
   }
 
-  @Caching(
-    put=@CachePut(key="#id"),
-    evict=@CacheEvict(value="catalogs", allEntries=true)
-  )
+  @CachePut(key="#id")
   public Category updateCategory(Long id, CategoryRequest categoryData) {
     // cannot change the catalog ID
     var category = getCategory(id);
+    catalogService.getCatalog(category.getOwner());
     if(categoryData.name() != null)
       category.setName(categoryData.name());
     if(categoryData.description() != null)
       category.setDescription(categoryData.description());
+    cacheService.deleteCatalogByOwner(category.getOwner());
     return categoryRepository.save(category);
   }
 
-  @Caching(evict={
-    @CacheEvict,
-    @CacheEvict(value="catalogs", allEntries=true)
-  })
+  @CacheEvict
   public void deleteCategory(Long id) {
     var category = getCategory(id);
-    // removing products in the cache
-    var productCache = cacheManager.getCache("products");
-    category.getProducts().stream()
-      .forEach(product -> productCache.evict(product.getId()));
+    cacheService.deleteCatalogByOwner(category.getOwner());
     categoryRepository.delete(category);
   }
   

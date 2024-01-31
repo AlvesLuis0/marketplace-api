@@ -21,6 +21,7 @@ public class ProductService {
 
   private final ProductRepository productRepository;
   private final CategoryService categoryService;
+  private final CacheService cacheService;
 
   private Product convert(ProductRequest productData) {
     var product = new Product();
@@ -40,47 +41,40 @@ public class ProductService {
 
   @Caching(
     put=@CachePut(key="#result.id"),
-    evict={
-      @CacheEvict(value="categories", key="#result.categoryId"),
-      @CacheEvict(value="catalogs", allEntries=true)
-    }
+    evict=@CacheEvict(value="categories", key="#result.categoryId")
   )
   public Product createProduct(ProductRequest productData) {
     var product = convert(productData);
     categoryService.getCategory(product.getCategoryId());
+    cacheService.deleteCatalogByOwner(categoryService.getCategory(product.getCategoryId()).getOwner());
     return productRepository.save(product);
   }
 
   @Caching(
     put=@CachePut(key="#id"),
-    evict={
-      @CacheEvict(value="categories", key="#result.categoryId"),
-      @CacheEvict(value="catalogs", allEntries=true)
-    }
+    evict=@CacheEvict(value="categories", key="#result.categoryId")
   )
   public Product updateProduct(Long id, ProductRequest productData) {
     var product = getProduct(id);
-    if(productData.categoryId() != null) {
-      categoryService.getCategory(product.getCategoryId());
-      product.setCategoryId(productData.categoryId());
-    }
+    // cannot change the category ID
     if(productData.name() != null)
       product.setName(productData.name());
     if(productData.description() != null)
       product.setDescription(productData.description());
     if(productData.price() != null)
       product.setPrice(productData.price());
+    cacheService.deleteCatalogByOwner(categoryService.getCategory(product.getCategoryId()).getOwner());
     return productRepository.save(product);
   }
 
   @Caching(evict={
     @CacheEvict,
-    @CacheEvict(value="categories", key="#result"),
-    @CacheEvict(value="catalogs", allEntries=true)
+    @CacheEvict(value="categories", key="#result")
   })
   public Long deleteProduct(Long id) {
     var product = getProduct(id);
     var categoryId = product.getCategoryId();
+    cacheService.deleteCatalogByOwner(categoryService.getCategory(product.getCategoryId()).getOwner());
     productRepository.delete(product);
     return categoryId;
   }
