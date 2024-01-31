@@ -32,10 +32,6 @@ public class CategoryService {
     return category;
   }
 
-  public List<Category> getAllCategory() {
-    return categoryRepository.findAll();
-  }
-
   @Cacheable
   public Category getCategory(Long id) {
     var category = categoryRepository.findById(id)
