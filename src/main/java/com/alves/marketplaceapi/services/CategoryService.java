@@ -23,10 +23,12 @@ import lombok.RequiredArgsConstructor;
 public class CategoryService {
 
   private final CategoryRepository categoryRepository;
+  private final CatalogService catalogService;
   private final CacheManager cacheManager;
 
   private Category convert(CategoryRequest categoryData) {
     var category = new Category();
+    category.setOwner(categoryData.owner());
     category.setName(categoryData.name());
     category.setDescription(categoryData.description());
     return category;
@@ -49,6 +51,7 @@ public class CategoryService {
   )
   public Category createCategory(CategoryRequest categoryData) {
     var category = convert(categoryData);
+    catalogService.getCatalog(category.getOwner());
     category.setProducts(List.of());
     return categoryRepository.save(category);
   }
@@ -58,6 +61,7 @@ public class CategoryService {
     evict=@CacheEvict(value="catalogs", allEntries=true)
   )
   public Category updateCategory(Long id, CategoryRequest categoryData) {
+    // cannot change the catalog ID
     var category = getCategory(id);
     if(categoryData.name() != null)
       category.setName(categoryData.name());
@@ -72,8 +76,8 @@ public class CategoryService {
   })
   public void deleteCategory(Long id) {
     var category = getCategory(id);
-    var productCache = cacheManager.getCache("products");
     // removing products in the cache
+    var productCache = cacheManager.getCache("products");
     category.getProducts().stream()
       .forEach(product -> productCache.evict(product.getId()));
     categoryRepository.delete(category);

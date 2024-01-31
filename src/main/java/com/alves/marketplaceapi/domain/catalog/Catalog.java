@@ -5,8 +5,22 @@ import java.util.List;
 
 import com.alves.marketplaceapi.domain.category.Category;
 
-public record Catalog(
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
 
-  List<Category> categories
+@Getter
+@Setter
+@Entity
+public class Catalog implements Serializable {
 
-) implements Serializable {}
+  @Id
+  private String owner;
+  @OneToMany(mappedBy="owner", fetch=FetchType.EAGER, cascade=CascadeType.REMOVE)
+  private List<Category> categories;
+
+}

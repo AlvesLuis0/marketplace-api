@@ -23,6 +23,7 @@ public class Category implements Serializable {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Long id;
+  private String owner;
   private String name;
   private String description;
   @OneToMany(mappedBy="categoryId", fetch=FetchType.EAGER, cascade=CascadeType.REMOVE)
